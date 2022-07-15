@@ -114,6 +114,7 @@ error InvalidNewController(address newController);
  * For these proxies, we extended EIP-1167 Minimal Proxy Contract to avoid `DELEGATECALL` inside `receive()` to accept
  * hard gas-capped `sends` & `transfers`.
  */
+
 contract SplitMain is ISplitMain {
     /// @notice address of wallet implementation for split proxies
     address public immutable override walletImplementation;
@@ -124,12 +125,13 @@ contract SplitMain is ISplitMain {
 
     /// @notice holds Split metadata
     struct Split {
+        // hash of the recepients, percentages, and distributorFee
         bytes32 hash;
         address controller;
         address newPotentialController;
     }
 
-    /// @notice mapping to Split metadata
+    /// @notice mapping from address of clone to Split struct
     mapping(address => Split) internal splits;
 
     // ------------------- CREATE/UPDATE SPLITS -------------------
@@ -153,6 +155,11 @@ contract SplitMain is ISplitMain {
             }
         }
     }
+
+    /// @notice constant to scale uints into percentages (1e6 == 100%)
+    uint256 public constant PERCENTAGE_SCALE = 1e6;
+    /// @notice maximum distributor fee; 1e5 = 10% * PERCENTAGE_SCALE
+    uint256 internal constant MAX_DISTRIBUTOR_FEE = 1e5;
 
     /** @notice Reverts if the split with recipients represented by `accounts` and `percentAllocations` is malformed
      *  @param accounts Ordered, unique list of addresses with ownership in the split
@@ -446,11 +453,6 @@ contract SplitMain is ISplitMain {
     }
 
     // ------------------- DISTRIBUTE FUNDS -------------------
-
-    /// @notice constant to scale uints into percentages (1e6 == 100%)
-    uint256 public constant PERCENTAGE_SCALE = 1e6;
-    /// @notice maximum distributor fee; 1e5 = 10% * PERCENTAGE_SCALE
-    uint256 internal constant MAX_DISTRIBUTOR_FEE = 1e5;
 
     /// @notice mapping to account ETH balances
     mapping(address => uint256) internal ethBalances;
